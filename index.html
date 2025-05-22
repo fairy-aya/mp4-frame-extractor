@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP4フレーム抽出ツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+:root {
+  --primary-color: #4a6cf7;
+  --primary-hover: #3a5ce5;
+  --secondary-color: #6c757d;
+  --secondary-hover: #5a6268;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --border-color: #dee2e6;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f5f7fb;
+  min-height: 100vh;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ヘッダー */
+.app-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.app-header h1 {
+  color: var(--primary-color);
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.app-description {
+  color: var(--secondary-color);
+  font-size: 1.1rem;
+}
+
+/* メインコンテンツ */
+.app-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+}
+
+@media (min-width: 992px) {
+  .app-main {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .extraction-section {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  
+  .results-section {
+    grid-column: 1 / span 2;
+  }
+}
+
+/* カード */
+.card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h2 {
+  font-size: 1.5rem;
+  color: var(--dark-color);
+  display: flex;
+  align-items: center;
+}
+
+.card-header h2 i {
+  margin-right: 10px;
+  color: var(--primary-color);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* アップロードエリア */
+.upload-area {
+  position: relative;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 40px 20px;
+  text-align: center;
+  transition: var(--transition);
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.upload-area:hover {
+  border-color: var(--primary-color);
+}
+
+.upload-area.drag-over {
+  background-color: rgba(74, 108, 247, 0.05);
+  border-color: var(--primary-color);
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-prompt i {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+/* ファイルリスト */
+.upload-list {
+  margin-top: 20px;
+}
+
+.upload-list h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--dark-color);
+}
+
+.file-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-right: 10px;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 500;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.file-meta {
+  font-size: 0.85rem;
+  color: var(--secondary-color);
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.file-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--secondary-color);
+  transition: var(--transition);
+}
+
+.file-actions button:hover {
+  color: var(--danger-color);
+}
+
+/* 設定グループ */
+.settings-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .settings-container {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .setting-group:last-child {
+    grid-column: 1 / span 2;
+  }
+}
+
+.setting-group {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.setting-group h3 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: var(--dark-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+/* フォーム要素 */
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.input-group input[type="text"],
+.input-group input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.input-group input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+}
+
+.radio-group,
+.checkbox-group {
+  margin-bottom: 15px;
+}
+
+.radio-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.radio-label span,
+.checkbox-label span {
+  margin-left: 8px;
+}
+
+.time-selector,
+.resize-options {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.filename-preview {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.filename-preview p {
+  font-size: 0.9rem;
+}
+
+.filename-preview span {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+/* ボタン */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+/* 結果セクション */
+.results-section {
+  display: none;
+}
+
+.results-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.result-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.result-item:hover {
+  box-shadow: var(--box-shadow);
+}
+
+.result-image {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.result-info {
+  padding: 10px;
+}
+
+.result-filename {
+  font-weight: 500;
+  margin-bottom: 5px;
+  word-break: break-all;
+  font-size: 0.9rem;
+}
+
+.result-meta {
+  font-size: 0.8rem;
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+}
+
+.result-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.result-actions button {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+/* フッター */
+.app-footer {
+  margin-top: 50px;
+  text-align: center;
+  padding: 20px 0;
+  color: var(--secondary-color);
+  border-top: 1px solid var(--border-color);
+}
+
+/* モーダル */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: var(--border-radius);
+  text-align: center;
+  max-width: 90%;
+  width: 400px;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid var(--primary-color);
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2rem;
+  }
+  
+  .app-description {
+    font-size: 1rem;
+  }
+  
+  .card-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 10px;
+  }
+  
+  .card-body {
+    padding: 15px;
+  }
+  
+  .upload-prompt i {
+    font-size: 2rem;
+  }
+  
+  .results-container {
+    grid-template-columns: 1fr;
+  }
+}
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-film"></i> MP4フレーム抽出ツール</h1>
+            <p class="app-description">動画ファイルから最終フレームや特定時間のフレームを抽出し、PNG形式で保存できます</p>
+        </header>
+
+        <main class="app-main">
+            <section class="upload-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-upload"></i> ファイルアップロード</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="dropArea">
+                            <input type="file" id="fileInput" multiple accept=".mp4" class="file-input">
+                            <div class="upload-prompt">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>ここにMP4ファイルをドラッグ＆ドロップ</p>
+                                <p>または</p>
+                                <button class="btn btn-primary" id="browseBtn">ファイルを選択</button>
+                            </div>
+                        </div>
+                        <div class="upload-list" id="uploadList">
+                            <h3>アップロードファイル一覧</h3>
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="extraction-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-image"></i> フレーム抽出設定</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="settings-container">
+                            <div class="setting-group">
+                                <h3>フレーム選択</h3>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="frameType" value="last" checked>
+                                        <span>最終フレーム</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="frameType" value="time">
+                                        <span>特定時間のフレーム</span>
+                                    </label>
+                                </div>
+                                <div class="time-selector" id="timeSelector">
+                                    <label for="timePosition">時間位置（秒）:</label>
+                                    <input type="number" id="timePosition" min="0" step="0.1" value="0">
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h3>リサイズ設定</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="resizeEnabled">
+                                        <span>リサイズを有効にする</span>
+                                    </label>
+                                </div>
+                                <div class="resize-options" id="resizeOptions">
+                                    <div class="input-group">
+                                        <label for="resizeWidth">幅:</label>
+                                        <input type="number" id="resizeWidth" min="1" placeholder="幅（ピクセル）">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="resizeHeight">高さ:</label>
+                                        <input type="number" id="resizeHeight" min="1" placeholder="高さ（ピクセル）">
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="maintainAspect" checked>
+                                            <span>アスペクト比を維持</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h3>ファイル名設定</h3>
+                                <div class="input-group">
+                                    <label for="filePrefix">プレフィックス:</label>
+                                    <input type="text" id="filePrefix" value="frame_">
+                                </div>
+                                <div class="input-group">
+                                    <label for="fileSuffix">サフィックス:</label>
+                                    <input type="text" id="fileSuffix" value="">
+                                </div>
+                                <div class="input-group">
+                                    <label for="startNumber">開始番号:</label>
+                                    <input type="number" id="startNumber" min="0" value="1">
+                                </div>
+                                <div class="input-group">
+                                    <label for="numberPadding">桁数:</label>
+                                    <input type="number" id="numberPadding" min="1" max="10" value="3">
+                                </div>
+                                <div class="filename-preview">
+                                    <p>ファイル名プレビュー: <span id="filenamePreview">frame_001.png</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="extractBtn" disabled>フレームを抽出</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="results-section" id="resultsSection">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-images"></i> 抽出結果</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="results-container" id="resultsContainer"></div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" id="downloadAllBtn" disabled>すべてダウンロード</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2025 MP4フレーム抽出ツール</p>
+        </footer>
+    </div>
+
+    <!-- モーダル -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p id="loadingMessage">処理中...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM要素
+            const fileInput = document.getElementById('fileInput');
+            const dropArea = document.getElementById('dropArea');
+            const browseBtn = document.getElementById('browseBtn');
+            const fileList = document.getElementById('fileList');
+            const extractBtn = document.getElementById('extractBtn');
+            const downloadAllBtn = document.getElementById('downloadAllBtn');
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const loadingModal = document.getElementById('loadingModal');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const timeSelector = document.getElementById('timeSelector');
+            const resizeOptions = document.getElementById('resizeOptions');
+            const filenamePreview = document.getElementById('filenamePreview');
+
+            // フォーム要素
+            const frameTypeRadios = document.querySelectorAll('input[name="frameType"]');
+            const timePosition = document.getElementById('timePosition');
+            const resizeEnabled = document.getElementById('resizeEnabled');
+            const resizeWidth = document.getElementById('resizeWidth');
+            const resizeHeight = document.getElementById('resizeHeight');
+            const maintainAspect = document.getElementById('maintainAspect');
+            const filePrefix = document.getElementById('filePrefix');
+            const fileSuffix = document.getElementById('fileSuffix');
+            const startNumber = document.getElementById('startNumber');
+            const numberPadding = document.getElementById('numberPadding');
+
+            // アップロードされたファイルを保存する配列
+            let uploadedFiles = [];
+            // 抽出されたフレームを保存する配列
+            let extractedFrames = [];
+
+            // ドラッグ&ドロップイベント
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropArea.classList.add('drag-over');
+            }
+
+            function unhighlight() {
+                dropArea.classList.remove('drag-over');
+            }
+
+            // ファイルドロップ処理
+            dropArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+
+            // ファイル選択ボタン
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', () => {
+                handleFiles(fileInput.files);
+            });
+
+            // ファイル処理
+            function handleFiles(files) {
+                if (files.length === 0) return;
+                
+                showLoading('ファイルを処理中...');
+                
+                // ファイル情報を取得して保存
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (file.type === 'video/mp4') {
+                        const video = document.createElement('video');
+                        video.preload = 'metadata';
+                        
+                        video.onloadedmetadata = function() {
+                            const fileInfo = {
+                                file: file,
+                                original_name: file.name,
+                                duration: video.duration,
+                                width: video.videoWidth,
+                                height: video.videoHeight
+                            };
+                            
+                            uploadedFiles.push(fileInfo);
+                            
+                            // すべてのファイルが処理されたら表示を更新
+                            if (uploadedFiles.length === Array.from(files).filter(f => f.type === 'video/mp4').length) {
+                                updateFileList();
+                                hideLoading();
+                                
+                                // 抽出ボタンを有効化
+                                if (uploadedFiles.length > 0) {
+                                    extractBtn.disabled = false;
+                                }
+                            }
+                        };
+                        
+                        video.onerror = function() {
+                            console.error('Error loading video:', file.name);
+                            
+                            // エラーが発生してもカウントして処理を続行
+                            const processedCount = uploadedFiles.length + 1;
+                            if (processedCount === Array.from(files).filter(f => f.type === 'video/mp4').length) {
+                                updateFileList();
+                                hideLoading();
+                                
+                                if (uploadedFiles.length > 0) {
+                                    extractBtn.disabled = false;
+                                }
+                            }
+                        };
+                        
+                        video.src = URL.createObjectURL(file);
+                    }
+                }
+                
+                // MP4ファイルがない場合
+                if (Array.from(files).filter(f => f.type === 'video/mp4').length === 0) {
+                    hideLoading();
+                    alert('MP4ファイルを選択してください');
+                }
+            }
+
+            // ファイルリストの更新
+            function updateFileList() {
+                fileList.innerHTML = '';
+                
+                if (uploadedFiles.length === 0) {
+                    fileList.innerHTML = '<div class="empty-list">ファイルがありません</div>';
+                    return;
+                }
+                
+                uploadedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    const duration = file.duration ? formatTime(file.duration) : '不明';
+                    const resolution = file.width && file.height ? `${file.width}x${file.height}` : '不明';
+                    
+                    fileItem.innerHTML = `
+                        <div class="file-icon"><i class="fas fa-file-video"></i></div>
+                        <div class="file-info">
+                            <div class="file-name">${file.original_name}</div>
+                            <div class="file-meta">
+                                ${duration} | ${resolution}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="remove-file" data-index="${index}"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    
+                    fileList.appendChild(fileItem);
+                });
+                
+                // 削除ボタンのイベントリスナーを追加
+                document.querySelectorAll('.remove-file').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        uploadedFiles.splice(index, 1);
+                        updateFileList();
+                        
+                        if (uploadedFiles.length === 0) {
+                            extractBtn.disabled = true;
+                        }
+                    });
+                });
+            }
+
+            // 時間のフォーマット（秒 → MM:SS）
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // フレームタイプの切り替え
+            frameTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'time') {
+                        timeSelector.style.display = 'block';
+                    } else {
+                        timeSelector.style.display = 'none';
+                    }
+                });
+            });
+
+            // リサイズオプションの切り替え
+            resizeEnabled.addEventListener('change', function() {
+                if (this.checked) {
+                    resizeOptions.style.display = 'block';
+                } else {
+                    resizeOptions.style.display = 'none';
+                }
+            });
+
+            // ファイル名プレビューの更新
+            function updateFilenamePreview() {
+                const prefix = filePrefix.value;
+                const suffix = fileSuffix.value;
+                const number = parseInt(startNumber.value);
+                const padding = parseInt(numberPadding.value);
+                
+                const numberStr = number.toString().padStart(padding, '0');
+                filenamePreview.textContent = `${prefix}${numberStr}${suffix}.png`;
+            }
+
+            // ファイル名設定の変更イベント
+            [filePrefix, fileSuffix, startNumber, numberPadding].forEach(input => {
+                input.addEventListener('input', updateFilenamePreview);
+            });
+
+            // 初期表示設定
+            timeSelector.style.display = 'none';
+            resizeOptions.style.display = 'none';
+            updateFilenamePreview();
+
+            // フレーム抽出ボタン
+            extractBtn.addEventListener('click', function() {
+                if (uploadedFiles.length === 0) return;
+                
+                showLoading('フレームを抽出中...');
+                
+                // 抽出設定の取得
+                const frameType = document.querySelector('input[name="frameType"]:checked').value;
+                const timePositionValue = parseFloat(timePosition.value) || 0;
+                
+                // リサイズ設定
+                const resizeSettings = {
+                    enabled: resizeEnabled.checked,
+                    width: parseInt(resizeWidth.value) || 0,
+                    height: parseInt(resizeHeight.value) || 0,
+                    maintain_aspect: maintainAspect.checked
+                };
+                
+                // ファイル名設定
+                const namingSettings = {
+                    prefix: filePrefix.value,
+                    suffix: fileSuffix.value,
+                    start_number: parseInt(startNumber.value) || 1,
+                    padding: parseInt(numberPadding.value) || 3
+                };
+                
+                // クライアントサイドでフレーム抽出処理
+                extractFramesClientSide(frameType, timePositionValue, resizeSettings, namingSettings);
+            });
+
+            // クライアントサイドでフレーム抽出
+            function extractFramesClientSide(frameType, timePosition, resizeSettings, namingSettings) {
+                extractedFrames = [];
+                const totalFiles = uploadedFiles.length;
+                let processedCount = 0;
+                
+                uploadedFiles.forEach((fileInfo, index) => {
+                    const video = document.createElement('video');
+                    video.preload = 'metadata';
+                    
+                    video.onloadedmetadata = function() {
+                        // 動画の長さを取得
+                        const duration = video.duration;
+                        
+                        // 特定時間またはラストフレームの位置を設定
+                        if (frameType === 'time') {
+                            // 特定時間のフレーム
+                            video.currentTime = Math.min(timePosition, duration);
+                        } else {
+                            // 最終フレーム（少し手前に設定）
+                            video.currentTime = Math.max(0, duration - 0.1);
+                        }
+                    };
+                    
+                    // フレームが読み込まれたときの処理
+                    video.onseeked = function() {
+                        // Canvas要素を作成してフレームを描画
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // リサイズ処理
+                        if (resizeSettings.enabled) {
+                            const originalWidth = canvas.width;
+                            const originalHeight = canvas.height;
+                            let newWidth = resizeSettings.width;
+                            let newHeight = resizeSettings.height;
+                            
+                            if (newWidth > 0 && newHeight > 0) {
+                                if (resizeSettings.maintain_aspect) {
+                                    // アスペクト比を維持
+                                    const aspect = originalWidth / originalHeight;
+                                    if (newWidth / newHeight > aspect) {
+                                        newWidth = Math.round(newHeight * aspect);
+                                    } else {
+                                        newHeight = Math.round(newWidth / aspect);
+                                    }
+                                }
+                            } else if (newWidth > 0) {
+                                // 幅のみ指定、アスペクト比を維持
+                                newHeight = Math.round(originalHeight * (newWidth / originalWidth));
+                            } else if (newHeight > 0) {
+                                // 高さのみ指定、アスペクト比を維持
+                                newWidth = Math.round(originalWidth * (newHeight / originalHeight));
+                            } else {
+                                // どちらも指定なし、元のサイズを使用
+                                newWidth = originalWidth;
+                                newHeight = originalHeight;
+                            }
+                            
+                            // リサイズ処理
+                            if (newWidth !== originalWidth || newHeight !== originalHeight) {
+                                const resizedCanvas = document.createElement('canvas');
+                                resizedCanvas.width = newWidth;
+                                resizedCanvas.height = newHeight;
+                                const resizedCtx = resizedCanvas.getContext('2d');
+                                resizedCtx.drawImage(canvas, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
+                                canvas.width = newWidth;
+                                canvas.height = newHeight;
+                                ctx.drawImage(resizedCanvas, 0, 0);
+                            }
+                        }
+                        
+                        // ファイル名の生成
+                        const prefix = namingSettings.prefix;
+                        const suffix = namingSettings.suffix;
+                        const startNumber = namingSettings.start_number;
+                        const padding = namingSettings.padding;
+                        
+                        const number = startNumber + index;
+                        const numberStr = number.toString().padStart(padding, '0');
+                        const filename = `${prefix}${numberStr}${suffix}.png`;
+                        
+                        // PNGデータを取得
+                        const dataURL = canvas.toDataURL('image/png');
+                        
+                        // 結果を保存
+                        extractedFrames.push({
+                            original_name: fileInfo.original_name,
+                            frame_filename: filename,
+                            width: canvas.width,
+                            height: canvas.height,
+                            dataURL: dataURL
+                        });
+                        
+                        // 処理カウントを増やす
+                        processedCount++;
+                        
+                        // すべてのファイルが処理されたら結果を表示
+                        if (processedCount === totalFiles) {
+                            displayResults();
+                            hideLoading();
+                            
+                            // 結果セクションを表示
+                            resultsSection.style.display = 'block';
+                            
+                            // ダウンロードボタンを有効化
+                            if (extractedFrames.length > 0) {
+                                downloadAllBtn.disabled = false;
+                            }
+                        }
+                    };
+                    
+                    video.onerror = function() {
+                        console.error('Error processing video:', fileInfo.original_name);
+                        
+                        // エラーが発生した場合もカウント
+                        extractedFrames.push({
+                            original_name: fileInfo.original_name,
+                            error: 'ビデオの処理中にエラーが発生しました'
+                        });
+                        
+                        processedCount++;
+                        
+                        if (processedCount === totalFiles) {
+                            displayResults();
+                            hideLoading();
+                            resultsSection.style.display = 'block';
+                            
+                            if (extractedFrames.some(frame => !frame.error)) {
+                                downloadAllBtn.disabled = false;
+                            }
+                        }
+                    };
+                    
+                    // ビデオソースを設定
+                    video.src = URL.createObjectURL(fileInfo.file);
+                });
+            }
+
+            // 結果の表示
+            function displayResults() {
+                resultsContainer.innerHTML = '';
+                
+                if (extractedFrames.length === 0) {
+                    resultsContainer.innerHTML = '<div class="empty-results">結果がありません</div>';
+                    return;
+                }
+                
+                extractedFrames.forEach((frame, index) => {
+                    if (frame.error) {
+                        const errorItem = document.createElement('div');
+                        errorItem.className = 'result-item error';
+                        errorItem.innerHTML = `
+                            <div class="result-info">
+                                <div class="result-filename">${frame.original_name}</div>
+                                <div class="result-error">${frame.error}</div>
+                            </div>
+                        `;
+                        resultsContainer.appendChild(errorItem);
+                        return;
+                    }
+                    
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    
+                    resultItem.innerHTML = `
+                        <img src="${frame.dataURL}" alt="${frame.original_name}" class="result-image">
+                        <div class="result-info">
+                            <div class="result-filename">${frame.frame_filename}</div>
+                            <div class="result-meta">
+                                元ファイル: ${frame.original_name}<br>
+                                解像度: ${frame.width}x${frame.height}
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn btn-primary download-frame" data-index="${index}">ダウンロード</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    resultsContainer.appendChild(resultItem);
+                });
+                
+                // ダウンロードボタンのイベントリスナーを追加
+                document.querySelectorAll('.download-frame').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        downloadFrame(extractedFrames[index]);
+                    });
+                });
+            }
+
+            // フレームのダウンロード
+            function downloadFrame(frame) {
+                const link = document.createElement('a');
+                link.href = frame.dataURL;
+                link.download = frame.frame_filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // すべてダウンロードボタン
+            downloadAllBtn.addEventListener('click', function() {
+                if (extractedFrames.length === 0) return;
+                
+                // 各フレームを順番にダウンロード
+                extractedFrames.forEach((frame, index) => {
+                    if (frame.error) return;
+                    
+                    // 少し遅延させて連続ダウンロードを可能にする
+                    setTimeout(() => {
+                        downloadFrame(frame);
+                    }, index * 500);
+                });
+            });
+
+            // ローディング表示
+            function showLoading(message) {
+                loadingMessage.textContent = message || '処理中...';
+                loadingModal.classList.add('show');
+            }
+
+            function hideLoading() {
+                loadingModal.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
